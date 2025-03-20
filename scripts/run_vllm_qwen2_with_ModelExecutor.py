@@ -1,17 +1,17 @@
-from vllm import LLM, SamplingParams
+from vllm.model_executor import ModelExecutor
 
 
+# Ref: https://www.restack.io/p/vllm-knowledge-eager-true-cat-ai
+# TODO: WIP
 def run_gpt():
     prompts = ["Give me a short introduction to large language model."]
     sampling_params = SamplingParams(temperature=0.8, top_p=0.95)
 
     # Create an LLM. Qwen/Qwen2-7B-Instruct or Qwen/Qwen2.5-0.5B-Instruct
-    llm = LLM(model="Qwen/Qwen2.5-0.5B-Instruct", enforce_eager=True)
+    llm = ModelExecutor(model="Qwen/Qwen2.5-0.5B-Instruct", eager=True)
     # Generate texts from the prompts. The output is a list of RequestOutput objects
     # that contain the prompt, generated text, and other information.
-    print(f"============================= BEFORE llm.generate(prompts, sampling_params) =============================")
     outputs = llm.generate(prompts, sampling_params)
-    print(f"============================= AFTER llm.generate(prompts, sampling_params) =============================")
 
     # <class 'vllm.model_executor.models.qwen2.Qwen2ForCausalLM'>
     print(
