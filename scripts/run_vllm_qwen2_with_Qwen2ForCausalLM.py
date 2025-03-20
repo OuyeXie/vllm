@@ -22,7 +22,7 @@ from vllm.distributed import (ensure_kv_transfer_initialized,
                               set_custom_all_reduce)
 from transformers import Qwen2ForCausalLM as HFQwen2ForCausalLM, Qwen2TokenizerFast
 
-from vllm_qwen2 import Qwen2ForCausalLM as CustomizedQwen2ForCausalLM
+from vllm.model_executor.models.qwen2 import Qwen2ForCausalLM as CustomizedQwen2ForCausalLM
 
 
 # def create_rope_embeddings(dim, seq_len, rope_theta, device="cuda"):

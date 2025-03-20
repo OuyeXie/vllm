@@ -52,11 +52,13 @@ from vllm.model_executor.pooling_metadata import PoolingMetadata
 from vllm.model_executor.sampling_metadata import SamplingMetadata
 from vllm.sequence import IntermediateTensors, PoolerOutput
 
-from .interfaces import SupportsLoRA, SupportsPP
-from .utils import (AutoWeightsLoader, PPMissingLayer, WeightsMapper,
+from vllm.model_executor.models.interfaces import SupportsLoRA, SupportsPP
+from vllm.model_executor.models.utils import (AutoWeightsLoader, PPMissingLayer, WeightsMapper,
                     is_pp_missing_parameter,
                     make_empty_intermediate_tensors_factory, make_layers,
                     maybe_prefix)
+# from vllm.forward_context import get_forward_context
+# from vllm.config import get_current_vllm_config
 
 logger = init_logger(__name__)
 
@@ -175,8 +177,26 @@ class Qwen2Attention(nn.Module):
     ) -> torch.Tensor:
         qkv, _ = self.qkv_proj(hidden_states)
         q, k, v = qkv.split([self.q_size, self.kv_size, self.kv_size], dim=-1)
+
+        print(f"-----1 self.attn.layer_name: {self.attn.layer_name} -----")
+        print(f"-----1 q.shape: {q.shape} -----")
+        print(f"-----1 k.shape: {k.shape} -----")
+        print(f"-----1 positions.shape: {positions.shape} -----")
         q, k = self.rotary_emb(positions, q, k)
+
+        # forward_context = get_forward_context()
+        # print(f"-----1 forward_context: {forward_context} -----")
+        # current_vllm_config = get_current_vllm_config()
+        # print(f"-----1 current_vllm_config: {current_vllm_config} -----")
+
+        print(f"-----1 q_size: {self.q_size} -----")
+        print(f"-----1 kv_size: {self.kv_size} -----")
+        print(f"-----1 q.shape: {q.shape} -----")
+
         attn_output = self.attn(q, k, v, kv_cache, attn_metadata)
+
+        print(f"-----1 attn_output.shape: {attn_output.shape} -----")
+
         output, _ = self.o_proj(attn_output)
         return output
 
@@ -244,6 +264,12 @@ class Qwen2DecoderLayer(nn.Module):
         else:
             hidden_states, residual = self.input_layernorm(
                 hidden_states, residual)
+
+        # forward_context = get_forward_context()
+        # print(f"-----0 forward_context: {forward_context} -----")
+        # current_vllm_config = get_current_vllm_config()
+        # print(f"-----1 current_vllm_config: {current_vllm_config} -----")
+
         hidden_states = self.self_attn(
             positions=positions,
             hidden_states=hidden_states,
@@ -345,6 +371,8 @@ class Qwen2Model(nn.Module):
             residual = intermediate_tensors["residual"]
         for i in range(self.start_layer, self.end_layer):
             layer = self.layers[i]
+            print(f"-----0 layer: {i} -----")
+            print(f"-----0 input hidden_states.shape: {hidden_states.shape} -----")
             hidden_states, residual = layer(
                 positions,
                 hidden_states,
@@ -352,6 +380,7 @@ class Qwen2Model(nn.Module):
                 attn_metadata,
                 residual,
             )
+            print(f"-----0 output hidden_states.shape: {hidden_states.shape} -----")
         if not get_pp_group().is_last_rank:
             return IntermediateTensors({
                 "hidden_states": hidden_states,
