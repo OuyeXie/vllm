@@ -25,6 +25,7 @@
 """Inference-only Qwen2 model compatible with HuggingFace weights."""
 from typing import Iterable, List, Optional, Set, Tuple, Union
 
+import traceback
 import torch
 from torch import nn
 from transformers import Qwen2Config
@@ -57,8 +58,6 @@ from vllm.model_executor.models.utils import (AutoWeightsLoader, PPMissingLayer,
                     is_pp_missing_parameter,
                     make_empty_intermediate_tensors_factory, make_layers,
                     maybe_prefix)
-# from vllm.forward_context import get_forward_context
-# from vllm.config import get_current_vllm_config
 
 logger = init_logger(__name__)
 
@@ -512,9 +511,27 @@ class Qwen2ForCausalLM(nn.Module, SupportsLoRA, SupportsPP):
         intermediate_tensors: Optional[IntermediateTensors] = None,
         inputs_embeds: Optional[torch.Tensor] = None,
     ) -> Union[torch.Tensor, IntermediateTensors]:
+
+        with open("/home/oxie/workspace/vllm/out/stack.log", "a+") as f:
+            f.write(f"----- print_stack forward start ----- \n")
+            traceback.print_stack(file = f)
+            f.write(f"----- print_stack forward end ----- \n")
+
+        print(f"----- Qwen2ForCausalLM.forward input_ids.shape: {input_ids.shape} -----")
+        print(f"----- Qwen2ForCausalLM.forward input_ids: {input_ids} -----")
+        print(f"----- Qwen2ForCausalLM.forward positions.shape: {positions.shape} -----")
+        print(f"----- Qwen2ForCausalLM.forward positions: {positions} -----")
+        print(f"----- Qwen2ForCausalLM.forward kv_caches.len: {len(kv_caches)} -----")
+        print(f"----- Qwen2ForCausalLM.forward attn_metadata: {attn_metadata} -----")
+        print(f"----- Qwen2ForCausalLM.forward intermediate_tensors: {intermediate_tensors} -----")
+        print(f"----- Qwen2ForCausalLM.forward inputs_embeds: {inputs_embeds} -----")
+
         hidden_states = self.model(input_ids, positions, kv_caches,
                                    attn_metadata, intermediate_tensors,
                                    inputs_embeds)
+
+        print(f"----- Qwen2ForCausalLM.forward hidden_states.shape: {hidden_states.shape} -----")
+
         return hidden_states
 
     def compute_logits(
@@ -522,8 +539,21 @@ class Qwen2ForCausalLM(nn.Module, SupportsLoRA, SupportsPP):
         hidden_states: torch.Tensor,
         sampling_metadata: SamplingMetadata,
     ) -> Optional[torch.Tensor]:
+
+        with open("/home/oxie/workspace/vllm/out/stack.log", "a+") as f:
+            f.write(f"----- print_stack compute_logits start ----- \n")
+            traceback.print_stack(file = f)
+            f.write(f"----- print_stack compute_logits end ----- \n")
+
+        print(f"----- Qwen2ForCausalLM.compute_logits hidden_states.shape: {hidden_states.shape} -----")
+        print(f"----- Qwen2ForCausalLM.compute_logits sampling_metadata: {sampling_metadata} -----")
+
+
         logits = self.logits_processor(self.lm_head, hidden_states,
                                        sampling_metadata)
+
+        print(f"----- Qwen2ForCausalLM.compute_logits logits.shape: {logits.shape} -----")
+
         return logits
 
     def sample(
@@ -532,6 +562,15 @@ class Qwen2ForCausalLM(nn.Module, SupportsLoRA, SupportsPP):
         sampling_metadata: SamplingMetadata,
     ) -> Optional[SamplerOutput]:
         next_tokens = self.sampler(logits, sampling_metadata)
+
+        with open("/home/oxie/workspace/vllm/out/stack.log", "a+") as f:
+            f.write(f"----- print_stack sample start ----- \n")
+            traceback.print_stack(file = f)
+            f.write(f"----- print_stack sample end ----- \n")
+
+        print(f"----- Qwen2ForCausalLM.sample next_tokens.len: {len(next_tokens)} -----")
+        print(f"----- Qwen2ForCausalLM.sample next_tokens: {next_tokens} -----")
+
         return next_tokens
 
     def load_weights(self, weights: Iterable[Tuple[str,
